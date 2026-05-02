@@ -153,7 +153,7 @@ export default function SimulationForm({ onSubmit, running }: Props) {
         disabled={running || !text.trim()}
         className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
       >
-        {running ? 'Simulating...' : 'Run Simulation'}
+        {running ? 'Simulating...' : 'Run Simulation (with ASI Run Simulation Graph RAG)'}
       </button>
     </form>
   );
