@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import SimulationForm from '@/components/SimulationForm';
 import ReactionFeed from '@/components/ReactionFeed';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
+import GraphRagPanel from '@/components/GraphRagPanel';
 import { createSimulation, streamSimulation, ReactionEvent, Analytics, SimulationRequest } from '@/lib/api';
 
 export default function Home() {
@@ -13,6 +14,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [totalAgents, setTotalAgents] = useState(0);
+  const [activeEntities, setActiveEntities] = useState<string>('');
 
   const runSimulation = useCallback(async (req: SimulationRequest) => {
     setReactions([]);
@@ -21,6 +23,14 @@ export default function Home() {
     setRunning(true);
     setProgress(0);
     setTotalAgents(req.agent_count);
+    
+    // Extract entities for Graph RAG display
+    const entities = [
+      ...req.demographics.age_groups,
+      ...req.demographics.platforms,
+      req.demographics.region
+    ].filter(Boolean).join(', ');
+    setActiveEntities(entities);
 
     try {
       const { simulation_id } = await createSimulation(req);
@@ -60,8 +70,9 @@ export default function Home() {
       </header>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <SimulationForm onSubmit={runSimulation} running={running} />
+          {activeEntities && <GraphRagPanel entities={activeEntities} />}
         </div>
 
         <div className="lg:col-span-2 space-y-6">

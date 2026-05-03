@@ -89,3 +89,9 @@ export async function getHealth(): Promise<{ status: string }> {
   const res = await fetch(`${API_URL}/health`);
   return res.json();
 }
+
+export async function queryGraph(entities: string): Promise<{ context: string }> {
+  const res = await fetch(`${API_URL}/graph/query?entities=${encodeURIComponent(entities)}`);
+  if (!res.ok) throw new Error('Failed to query graph');
+  return res.json();
+}
