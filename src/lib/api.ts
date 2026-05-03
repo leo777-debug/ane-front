@@ -52,8 +52,7 @@ export interface Analytics {
 }
 
 export async function createSimulation(req: SimulationRequest): Promise<{ simulation_id: string; agent_count: number }> {
-  // Fixed URL: removed /api prefix to match backend main.py
-  const res = await fetch(`${API_URL}/simulate`, {
+  const res = await fetch(`${API_URL}/api/simulate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
@@ -68,21 +67,15 @@ export function streamSimulation(
   onEvent: (event: ReactionEvent) => void,
   onError: (err: Error) => void
 ): () => void {
-  // Fixed URL: removed /api prefix to match backend main.py
-  // Note: Backend currently doesn't have a dedicated /stream endpoint, 
-  // it uses polling or background tasks. For now, we'll simulate streaming 
-  // by polling the /simulate/{id} endpoint.
-  
   let isClosed = false;
   const poll = async () => {
     if (isClosed) return;
     try {
-      const res = await fetch(`${API_URL}/simulate/${simId}`);
+      const res = await fetch(`${API_URL}/api/simulate/${simId}`);
       if (!res.ok) throw new Error('Failed to fetch simulation status');
       const data = await res.json();
       
       if (data.results && data.results.length > 0) {
-        // Send each result as a reaction event
         data.results.forEach((result: any) => {
           onEvent({
             type: 'reaction',
@@ -107,7 +100,6 @@ export function streamSimulation(
         });
         isClosed = true;
       } else {
-        // Continue polling
         setTimeout(poll, 2000);
       }
     } catch (err: any) {
@@ -126,7 +118,7 @@ export async function getHealth(): Promise<{ status: string }> {
 }
 
 export async function queryGraph(entities: string): Promise<{ context: string }> {
-  const res = await fetch(`${API_URL}/graph/query?entities=${encodeURIComponent(entities)}`);
+  const res = await fetch(`${API_URL}/api/graph/query?entities=${encodeURIComponent(entities)}`);
   if (!res.ok) throw new Error('Failed to query graph');
   return res.json();
 }
