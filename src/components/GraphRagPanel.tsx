@@ -10,18 +10,22 @@ interface GraphRagPanelProps {
 export default function GraphRagPanel({ entities }: GraphRagPanelProps) {
   const [context, setContext] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!entities) return;
 
     const fetchGraph = async () => {
       setLoading(true);
+      setError(false);
       try {
-        const data = await queryGraph(entities);
+        // Normalize entities for the API (lowercase, no spaces)
+        const normalized = entities.split(',').map(e => e.trim().toLowerCase()).join(',');
+        const data = await queryGraph(normalized);
         setContext(data.context);
       } catch (err) {
         console.error('Graph RAG error:', err);
-        setContext('Error loading graph context.');
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -33,37 +37,56 @@ export default function GraphRagPanel({ entities }: GraphRagPanelProps) {
   if (!entities) return null;
 
   return (
-    <div className="bg-slate-900/80 border border-indigo-500/30 rounded-2xl p-6 shadow-xl backdrop-blur-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
-        <h3 className="text-lg font-semibold text-indigo-100">Graph RAG Brain</h3>
+    <div className="bg-slate-900/90 border border-indigo-500/40 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-3 h-3 bg-indigo-500 rounded-full animate-ping absolute opacity-75" />
+            <div className="w-3 h-3 bg-indigo-400 rounded-full relative" />
+          </div>
+          <h3 className="text-xl font-bold text-white tracking-tight">Mirofish Graph RAG</h3>
+        </div>
+        <div className="px-2 py-1 bg-indigo-500/20 rounded text-[10px] font-bold text-indigo-400 uppercase tracking-widest border border-indigo-500/30">
+          Active Brain
+        </div>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
-          <p className="text-xs font-medium text-indigo-400 uppercase tracking-wider mb-1">Active Entities</p>
+          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 opacity-70">Knowledge Nodes</p>
           <div className="flex flex-wrap gap-2">
             {entities.split(',').map((e, i) => (
-              <span key={i} className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded text-xs text-indigo-300">
+              <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs font-medium text-indigo-200">
+                <span className="w-1 h-1 bg-indigo-400 rounded-full" />
                 {e.trim()}
-              </span>
+              </div>
             ))}
           </div>
         </div>
 
-        <div>
-          <p className="text-xs font-medium text-indigo-400 uppercase tracking-wider mb-1">Retrieved Knowledge</p>
-          <div className="p-3 bg-slate-950/50 rounded-lg border border-slate-800 min-h-[60px]">
+        <div className="relative">
+          <div className="absolute -left-3 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/50 via-transparent to-transparent" />
+          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 opacity-70">Retrieved Context</p>
+          <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800/50 min-h-[100px] relative overflow-hidden">
             {loading ? (
-              <div className="flex items-center gap-2 text-slate-500 text-sm italic">
-                <div className="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-                Querying knowledge graph...
+              <div className="flex flex-col items-center justify-center py-4 gap-3 text-slate-500 text-sm italic">
+                <div className="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <span>Traversing knowledge graph...</span>
+              </div>
+            ) : error ? (
+              <div className="flex items-center gap-2 text-red-400 text-sm py-2">
+                <span className="text-lg">⚠️</span>
+                Connection issue. Retrying...
               </div>
             ) : (
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
                 {context || 'No specific knowledge found for these entities.'}
-              </p>
+              </div>
             )}
+            
+            {/* Mirofish-style grid decoration */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03]" 
+                 style={{ backgroundImage: 'linear-gradient(#6366f1 1px, transparent 1px), linear-gradient(90deg, #6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
           </div>
         </div>
       </div>
