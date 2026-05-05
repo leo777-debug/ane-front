@@ -101,3 +101,9 @@ async def run_simulation_task(sim_id: str, request: SimulationRequest):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
+@app.get("/graph/query")
+async def query_graph(entities: str = ""):
+    return {
+        "context": f"Knowledge graph context for: {entities}. These entities represent your target audience segments and platforms for simulation."
+    }
