@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = 'https://ane-ai.onrender.com';
 
 export interface ContentInput {
   title: string;
@@ -6,7 +6,6 @@ export interface ContentInput {
   type: string;
   target_platform: string;
 }
-
 export interface DemographicsInput {
   age_groups: string[];
   genders: string[];
@@ -14,13 +13,11 @@ export interface DemographicsInput {
   mena_focus: boolean;
   platforms: string[];
 }
-
 export interface SimulationRequest {
   content: ContentInput;
   demographics: DemographicsInput;
   agent_count: number;
 }
-
 export interface ReactionEvent {
   type: 'reaction' | 'complete' | 'error';
   timestamp: string;
@@ -38,7 +35,6 @@ export interface ReactionEvent {
   total_agents?: number;
   message?: string;
 }
-
 export interface Analytics {
   total_reactions: number;
   avg_engagement_score: number;
@@ -52,14 +48,14 @@ export interface Analytics {
 }
 
 export async function createSimulation(req: SimulationRequest): Promise<{ simulation_id: string; agent_count: number }> {
-  const res = await fetch(`${API_URL}/api/simulate`, {
+  const res = await fetch(`${API_URL}/api/simulations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),
   });
   if (!res.ok) throw new Error(`Failed to create simulation: ${res.statusText}`);
   const data = await res.json();
-  return { simulation_id: data.id, agent_count: req.agent_count };
+  return { simulation_id: data.simulation_id, agent_count: req.agent_count };
 }
 
 export function streamSimulation(
@@ -68,48 +64,31 @@ export function streamSimulation(
   onError: (err: Error) => void
 ): () => void {
   let isClosed = false;
-  const poll = async () => {
-    if (isClosed) return;
-    try {
-      const res = await fetch(`${API_URL}/api/simulate/${simId}`);
-      if (!res.ok) throw new Error('Failed to fetch simulation status');
-      const data = await res.json();
-      
-      if (data.results && data.results.length > 0) {
-        data.results.forEach((result: any) => {
-          onEvent({
-            type: 'reaction',
-            timestamp: new Date().toISOString(),
-            ...result
-          });
-        });
-      }
+  const eventSource = new EventSource(`${API_URL}/api/simulations/${simId}/stream`);
 
-      if (data.status === 'completed') {
-        onEvent({
-          type: 'complete',
-          timestamp: new Date().toISOString(),
-          analytics: data.analytics || {}
-        });
+  eventSource.onmessage = (e) => {
+    try {
+      const event = JSON.parse(e.data);
+      onEvent(event);
+      if (event.type === 'complete' || event.type === 'error') {
+        eventSource.close();
         isClosed = true;
-      } else if (data.status === 'failed') {
-        onEvent({
-          type: 'error',
-          timestamp: new Date().toISOString(),
-          message: data.error || 'Simulation failed'
-        });
-        isClosed = true;
-      } else {
-        setTimeout(poll, 2000);
       }
-    } catch (err: any) {
-      onError(err);
+    } catch {}
+  };
+
+  eventSource.onerror = (err) => {
+    if (!isClosed) {
+      onError(new Error('Stream connection failed'));
+      eventSource.close();
       isClosed = true;
     }
   };
 
-  poll();
-  return () => { isClosed = true; };
+  return () => {
+    isClosed = true;
+    eventSource.close();
+  };
 }
 
 export async function getHealth(): Promise<{ status: string }> {
