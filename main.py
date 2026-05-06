@@ -120,8 +120,8 @@ async def query_graph(request: Request, entities: str = ""):
 
 app.include_router(router)
 
-
 @app.get("/")
+@app.head("/")
 async def root():
     return {"message": "ANE Backend is Live"}
 
