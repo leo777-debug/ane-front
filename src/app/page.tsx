@@ -36,7 +36,7 @@ export default function LandingPage() {
       } else {
         const err = await res.json();
         if (err?.code === '23505') {
-          setStatus('success'); // already signed up — still show success
+          setStatus('success');
         } else {
           throw new Error(err?.message || 'Something went wrong');
         }
@@ -65,7 +65,7 @@ export default function LandingPage() {
       {/* Hero */}
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '80px 24px 40px', textAlign: 'center' }}>
         <div style={{ display: 'inline-block', background: '#00d4ff18', border: '1px solid #00d4ff44', borderRadius: 20, padding: '4px 14px', fontSize: 11, color: '#00d4ff', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 28 }}>
-          Early Access · MiroFish × ASI-Evolve
+          Early Access
         </div>
 
         <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-3px', marginBottom: 20 }}>
@@ -84,7 +84,7 @@ export default function LandingPage() {
           {[
             { icon: '🧬', title: 'OCEAN Agents', desc: 'Big Five personality profiles from Gen Z to Boomers, MENA to Global' },
             { icon: '🕸️', title: 'GraphRAG Brain', desc: 'Knowledge graph extraction finds hidden content patterns and triggers' },
-            { icon: '⚡', title: 'ASI-Evolve', desc: 'Self-improving simulation loop gets smarter with every run' },
+            { icon: '⚡', title: 'Viral Prediction', desc: 'Get engagement, shareability and controversy scores before you post' },
           ].map((f) => (
             <div key={f.title} style={{ background: '#12141a', border: '1px solid #1e2230', borderRadius: 10, padding: 20, textAlign: 'left' }}>
               <div style={{ fontSize: 24, marginBottom: 10 }}>{f.icon}</div>
@@ -141,11 +141,6 @@ export default function LandingPage() {
               </form>
             </>
           )}
-        </div>
-
-        {/* Social proof */}
-        <div style={{ marginTop: 40, fontSize: 11, color: '#5a6080' }}>
-          Built on MiroFish swarm engine · ASI-Evolve optimization · OpenRouter model fallback chain
         </div>
       </div>
     </main>
