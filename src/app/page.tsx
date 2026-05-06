@@ -1,107 +1,151 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import SimulationForm from '@/components/SimulationForm';
-import ReactionFeed from '@/components/ReactionFeed';
-import AnalyticsPanel from '@/components/AnalyticsPanel';
-import GraphRagPanel from '@/components/GraphRagPanel';
-import { createSimulation, streamSimulation, ReactionEvent, Analytics, SimulationRequest } from '@/lib/api';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  const [reactions, setReactions] = useState<ReactionEvent[]>([]);
-  const [analytics, setAnalytics] = useState<Analytics | null>(null);
-  const [running, setRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [totalAgents, setTotalAgents] = useState(0);
-  const [activeEntities, setActiveEntities] = useState<string>('');
+const SUPABASE_URL = 'https://bjymbbrdiqakbetanmso.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nPDfS0UbQ4Ho0tot1fLvyQ_dIlCXqW3';
 
-  const runSimulation = useCallback(async (req: SimulationRequest) => {
-    setReactions([]);
-    setAnalytics(null);
-    setError(null);
-    setRunning(true);
-    setProgress(0);
-    setTotalAgents(req.agent_count);
-    
-    // Extract entities for Graph RAG display
-    const entities = [
-      ...req.demographics.age_groups,
-      ...req.demographics.platforms,
-      req.demographics.region
-    ].filter(Boolean).join(', ');
-    setActiveEntities(entities);
+export default function LandingPage() {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus('loading');
+    setErrorMsg('');
 
     try {
-      const { simulation_id } = await createSimulation(req);
-
-      streamSimulation(
-        simulation_id,
-        (event) => {
-          if (event.type === 'reaction') {
-            setReactions((prev) => [...prev, event]);
-            setProgress((prev) => prev + 1);
-          } else if (event.type === 'complete') {
-            if (event.analytics) setAnalytics(event.analytics);
-            setRunning(false);
-          } else if (event.type === 'error') {
-            setError(event.message || 'Simulation error');
-            setRunning(false);
-          }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=minimal',
         },
-        (err) => {
-          setError(err.message);
-          setRunning(false);
+        body: JSON.stringify({ email: email.trim(), name: name.trim(), created_at: new Date().toISOString() }),
+      });
+
+      if (res.status === 201 || res.ok) {
+        setStatus('success');
+      } else {
+        const err = await res.json();
+        if (err?.code === '23505') {
+          setStatus('success'); // already signed up — still show success
+        } else {
+          throw new Error(err?.message || 'Something went wrong');
         }
-      );
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to start simulation');
-      setRunning(false);
+      }
+    } catch (e: any) {
+      setStatus('error');
+      setErrorMsg(e.message || 'Failed to join waitlist');
     }
-  }, []);
+  };
 
   return (
-    <main className="min-h-screen p-6 md:p-10">
-      <header className="mb-10 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-white mb-2">
-          ANE<span className="text-purple-400">.ai</span>
-        </h1>
-        <p className="text-gray-400 text-lg">Audience Network Emulator — see how the world reacts to your content</p>
-      </header>
+    <main style={{ minHeight: '100vh', background: '#0a0b0f', color: '#e8eaf0', fontFamily: 'inherit' }}>
+      {/* Nav */}
+      <nav style={{ borderBottom: '1px solid #1e2230', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-2px', background: 'linear-gradient(135deg,#00d4ff,#00ff88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          ANE.ai
+        </div>
+        <button
+          onClick={() => router.push('/simulate')}
+          style={{ background: 'transparent', border: '1px solid #1e2230', borderRadius: 6, color: '#5a6080', fontFamily: 'inherit', fontSize: 12, padding: '8px 16px', cursor: 'pointer', letterSpacing: 1 }}
+        >
+          DEMO →
+        </button>
+      </nav>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-6">
-          <SimulationForm onSubmit={runSimulation} running={running} />
-          {activeEntities && <GraphRagPanel entities={activeEntities} />}
+      {/* Hero */}
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '80px 24px 40px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-block', background: '#00d4ff18', border: '1px solid #00d4ff44', borderRadius: 20, padding: '4px 14px', fontSize: 11, color: '#00d4ff', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 28 }}>
+          Early Access · MiroFish × ASI-Evolve
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          {error && (
-            <div className="bg-red-900/40 border border-red-500 rounded-xl p-4 text-red-300">
-              <strong>Error:</strong> {error}
-            </div>
-          )}
+        <h1 style={{ fontSize: 52, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-3px', marginBottom: 20 }}>
+          See how the world<br />
+          <span style={{ background: 'linear-gradient(135deg,#00d4ff,#00ff88)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            reacts to your content
+          </span>
+        </h1>
 
-          {(running || reactions.length > 0) && (
-            <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-gray-300 text-sm font-medium">
-                  {running ? 'Simulating...' : 'Complete'}
-                </span>
-                <span className="text-purple-400 text-sm">{progress} / {totalAgents} agents</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div
-                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: totalAgents > 0 ? `${(progress / totalAgents) * 100}%` : '0%' }}
+        <p style={{ fontSize: 18, color: '#8890a8', lineHeight: 1.7, marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>
+          ANE simulates thousands of AI agents — each with unique demographics, personality, and media habits — reacting to your content before you post it.
+        </p>
+
+        {/* Features */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 64 }}>
+          {[
+            { icon: '🧬', title: 'OCEAN Agents', desc: 'Big Five personality profiles from Gen Z to Boomers, MENA to Global' },
+            { icon: '🕸️', title: 'GraphRAG Brain', desc: 'Knowledge graph extraction finds hidden content patterns and triggers' },
+            { icon: '⚡', title: 'ASI-Evolve', desc: 'Self-improving simulation loop gets smarter with every run' },
+          ].map((f) => (
+            <div key={f.title} style={{ background: '#12141a', border: '1px solid #1e2230', borderRadius: 10, padding: 20, textAlign: 'left' }}>
+              <div style={{ fontSize: 24, marginBottom: 10 }}>{f.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#e8eaf0', marginBottom: 6 }}>{f.title}</div>
+              <div style={{ fontSize: 11, color: '#5a6080', lineHeight: 1.6 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Waitlist form */}
+        <div style={{ background: '#12141a', border: '1px solid #1e2230', borderRadius: 12, padding: 36, maxWidth: 480, margin: '0 auto' }}>
+          {status === 'success' ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: '#00ff88', marginBottom: 8 }}>You're on the list!</div>
+              <div style={{ fontSize: 13, color: '#5a6080', marginBottom: 24 }}>We'll email you when your access is ready.</div>
+              <button
+                onClick={() => router.push('/simulate')}
+                style={{ background: 'linear-gradient(135deg,#00d4ff,#006688)', border: 'none', borderRadius: 6, color: '#000', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, padding: '12px 24px', cursor: 'pointer', letterSpacing: 1 }}
+              >
+                TRY DEMO NOW →
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Join the waitlist</div>
+              <div style={{ fontSize: 12, color: '#5a6080', marginBottom: 24 }}>Be first to access ANE when we launch publicly.</div>
+              <form onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{ width: '100%', background: '#070809', border: '1px solid #1e2230', borderRadius: 6, color: '#e8eaf0', fontFamily: 'inherit', fontSize: 13, padding: '11px 14px', boxSizing: 'border-box', outline: 'none', marginBottom: 10 }}
                 />
-              </div>
-            </div>
+                <input
+                  type="email"
+                  placeholder="Your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  style={{ width: '100%', background: '#070809', border: '1px solid #1e2230', borderRadius: 6, color: '#e8eaf0', fontFamily: 'inherit', fontSize: 13, padding: '11px 14px', boxSizing: 'border-box', outline: 'none', marginBottom: 14 }}
+                />
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  style={{ width: '100%', background: status === 'loading' ? '#1e2230' : 'linear-gradient(135deg,#00d4ff,#006688)', border: 'none', borderRadius: 6, color: status === 'loading' ? '#5a6080' : '#000', fontFamily: 'inherit', fontWeight: 700, fontSize: 13, padding: '12px 24px', cursor: status === 'loading' ? 'not-allowed' : 'pointer', letterSpacing: 1 }}
+                >
+                  {status === 'loading' ? 'JOINING...' : 'GET EARLY ACCESS →'}
+                </button>
+                {status === 'error' && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: '#ff3355' }}>❌ {errorMsg}</div>
+                )}
+              </form>
+            </>
           )}
+        </div>
 
-          {analytics && <AnalyticsPanel analytics={analytics} />}
-
-          {reactions.length > 0 && <ReactionFeed reactions={reactions} />}
+        {/* Social proof */}
+        <div style={{ marginTop: 40, fontSize: 11, color: '#5a6080' }}>
+          Built on MiroFish swarm engine · ASI-Evolve optimization · OpenRouter model fallback chain
         </div>
       </div>
     </main>
