@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const SUPABASE_URL = 'https://bjymbbrdiqakbetanmso.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_nPDfS0UbQ4Ho0tot1fLvyQ_dIlCXqW3';  
+const SUPABASE_URL = 'https://bjymbbrdiqakbetanmso.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nPDfS0UbQ4Ho0tot1fLvyQ_dIlCXqW3';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
